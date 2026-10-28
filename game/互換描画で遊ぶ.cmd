@@ -1,0 +1,1 @@
+@echo offsetlocalif not defined GODOT_EXE set "GODOT_EXE=%~dp0Godot.exe"if not exist "%GODOT_EXE%" (  echo Set GODOT_EXE to your Godot 4.7.2 executable, or open project.godot in Godot.  pause  exit /b 1)start "" "%GODOT_EXE%" --path "%~dp0." --rendering-method gl_compatibility --rendering-driver opengl3 --screen 1 --position 160,120 --resolution 1280x720
