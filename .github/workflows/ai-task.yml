@@ -1,5 +1,7 @@
 name: Ice Forest task
 on:
+  issues:
+    types: [labeled]
   workflow_dispatch:
     inputs:
       issue_number:
@@ -10,12 +12,12 @@ permissions:
   contents: read
   issues: write
 concurrency:
-  group: ice-forest-dispatch
+  group: ice-forest-dispatch-${{ github.event.issue.number || inputs.issue_number }}
   cancel-in-progress: false
 jobs:
   dispatch:
     # Evaluated before runner allocation. No paid private runner fallback.
-    if: github.event.repository.private == false && vars.AUTOMATION_ENABLED == 'true' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+    if: (github.event_name == 'workflow_dispatch' || (github.event.label.name == 'ai-ready' && github.actor == github.repository_owner)) && github.event.repository.private == false && vars.AUTOMATION_ENABLED == 'true' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
     runs-on: ubuntu-latest
     timeout-minutes: 3
     steps:
@@ -25,6 +27,6 @@ jobs:
       - run: node automation/dispatch.mjs
         env:
           AUTOMATION_ENABLED: ${{ vars.AUTOMATION_ENABLED }}
-          ISSUE_NUMBER: ${{ inputs.issue_number }}
+          ISSUE_NUMBER: ${{ github.event.issue.number || inputs.issue_number }}
           GITHUB_TOKEN: ${{ github.token }}
           JULES_API_KEY: ${{ secrets.JULES_API_KEY }}
