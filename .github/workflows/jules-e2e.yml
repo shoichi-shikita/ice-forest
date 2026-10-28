@@ -1,0 +1,26 @@
+name: Jules end-to-end verification
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/jules-e2e.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+  issues: write
+concurrency:
+  group: ice-forest-e2e
+  cancel-in-progress: false
+jobs:
+  verify:
+    if: github.event.repository.private == false && vars.AUTOMATION_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - run: node automation/e2e.mjs
+        env:
+          AUTOMATION_ENABLED: ${{ vars.AUTOMATION_ENABLED }}
+          GITHUB_TOKEN: ${{ github.token }}
+          JULES_API_KEY: ${{ secrets.JULES_API_KEY }}
