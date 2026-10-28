@@ -1,0 +1,31 @@
+name: Bounded AI feedback
+on:
+  schedule:
+    - cron: '*/30 * * * *'
+  issue_comment:
+    types: [created, edited]
+  workflow_dispatch:
+permissions:
+  contents: read
+  issues: write
+  pull-requests: read
+  checks: read
+concurrency:
+  group: ice-forest-feedback
+  cancel-in-progress: false
+jobs:
+  feedback:
+    if: github.event.repository.private == false && vars.AUTOMATION_ENABLED == 'true' && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || github.event.sender.login == 'chatgpt-codex-connector[bot]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      # Always trusted default-branch code. Never check out PR code with secrets.
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          persist-credentials: false
+      - run: node automation/feedback.mjs
+        env:
+          AUTOMATION_ENABLED: ${{ vars.AUTOMATION_ENABLED }}
+          GITHUB_TOKEN: ${{ github.token }}
+          JULES_API_KEY: ${{ secrets.JULES_API_KEY }}
