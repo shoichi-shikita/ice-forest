@@ -1,0 +1,26 @@
+name: Godot prototype tests
+on: [push, pull_request, workflow_dispatch]
+permissions:
+  contents: read
+jobs:
+  test:
+    if: github.event.repository.private == false
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - name: Download pinned Godot engine
+        run: |
+          curl --fail --location --output "$RUNNER_TEMP/godot.zip" https://github.com/godotengine/godot/releases/download/4.7.2-stable/Godot_v4.7.2-stable_linux.x86_64.zip
+          echo "cadd3204e728a35d3f13adb7fd0d7902636b79f6b95c40c265eb73b6c35329e4  $RUNNER_TEMP/godot.zip" | sha256sum --check
+          unzip -q "$RUNNER_TEMP/godot.zip" -d "$RUNNER_TEMP/godot"
+          chmod +x "$RUNNER_TEMP/godot/Godot_v4.7.2-stable_linux.x86_64"
+      - name: Import and check scripts
+        run: '"$RUNNER_TEMP/godot/Godot_v4.7.2-stable_linux.x86_64" --headless --path game --editor --import --quit'
+      - name: State and scene integration tests
+        run: |
+          "$RUNNER_TEMP/godot/Godot_v4.7.2-stable_linux.x86_64" --headless --path game --script res://tests/test_run_state.gd
+          "$RUNNER_TEMP/godot/Godot_v4.7.2-stable_linux.x86_64" --headless --path game --script res://tests/test_scene.gd
+          "$RUNNER_TEMP/godot/Godot_v4.7.2-stable_linux.x86_64" --headless --path game -- --smoke

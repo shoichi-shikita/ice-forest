@@ -1,6 +1,7 @@
 extends SceneTree
 
 var assert_count: int = 0
+var failure_count: int = 0
 
 func _init() -> void:
 	var state_script = load("res://scripts/run_state.gd")
@@ -81,13 +82,13 @@ func _init() -> void:
 	assert_eq(state.can_escape(), false, "Cannot escape if caught even with sigils")
 	assert_eq(state.try_escape(), false, "Escape should fail if caught")
 
-	print("All %d tests passed!" % assert_count)
-	quit(0)
+	print("%d assertions, %d failures" % [assert_count, failure_count])
+	quit(0 if failure_count == 0 else 1)
 
 func assert_eq(actual, expected, message: String) -> void:
 	assert_count += 1
 	if actual != expected:
+		failure_count += 1
 		print("Test failed: %s" % message)
 		print("  Expected: %s" % str(expected))
 		print("  Actual:   %s" % str(actual))
-		quit(1)
