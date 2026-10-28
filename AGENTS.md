@@ -1,6 +1,6 @@
 # Ice Forest development guidance
 
-The project is a horror game titled アイスの森. The user has not yet supplied confirmed gameplay, story, engine, platform, or asset requirements. Do not invent or present them as approved requirements.
+The project is a first-person psychological horror game titled アイスの森. Read DESIGN_RULES.md before any game work: it records the user's authoritative v0.31 handoff. The Windows executable distribution target is confirmed. Preserve the abandoned Japanese cedar plantation, physical ice-cream sticks, no progress counters or protagonist monologue, flashlight-off blackness, and deepest-area-then-return clear condition without requiring all sticks. PR #3's snow/crystal prototype is superseded. The user-provided canonical v0.32 source is now under game/. Read game/MASTER_CONTEXT.md, game/DESIGN_RULES.md and docs/v032-source-provenance.md before edits. Do not reconstruct or overwrite it from the earlier incorrect prototype. Preserve in-world stick inspection, dialogue and audio behavior already implemented. Run existing verify scripts using a graphical or virtual display; plain headless mode does not exercise mouse-captured camera updates.
 
 ## Boundaries
 

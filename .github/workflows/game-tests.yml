@@ -1,0 +1,30 @@
+name: Canonical v032 Godot checks
+on: [push, pull_request, workflow_dispatch]
+permissions:
+  contents: read
+jobs:
+  test:
+    if: github.event.repository.private == false
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    env:
+      LIBGL_ALWAYS_SOFTWARE: '1'
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - name: Download pinned Godot
+        run: |
+          curl --fail --location --output "$RUNNER_TEMP/godot.zip" https://github.com/godotengine/godot/releases/download/4.7.2-stable/Godot_v4.7.2-stable_linux.x86_64.zip
+          echo "cadd3204e728a35d3f13adb7fd0d7902636b79f6b95c40c265eb73b6c35329e4  $RUNNER_TEMP/godot.zip" | sha256sum --check
+          unzip -q "$RUNNER_TEMP/godot.zip" -d "$RUNNER_TEMP/godot"
+          chmod +x "$RUNNER_TEMP/godot/Godot_v4.7.2-stable_linux.x86_64"
+      - name: Import resources
+        run: '"$RUNNER_TEMP/godot/Godot_v4.7.2-stable_linux.x86_64" --headless --path game --editor --import --quit'
+      - name: Verify using a virtual display
+        run: |
+          set -euo pipefail
+          for test_name in verify verify_audio verify_camera verify_environment verify_visual verify_night; do
+            timeout 45s xvfb-run --auto-servernum "$RUNNER_TEMP/godot/Godot_v4.7.2-stable_linux.x86_64" --path game --rendering-method gl_compatibility --script "res://scripts/$test_name.gd" 2>&1 | tee "$RUNNER_TEMP/$test_name.log"
+            if grep -E 'SCRIPT ERROR|SHADER ERROR|Assertion failed' "$RUNNER_TEMP/$test_name.log"; then exit 1; fi
+          done
