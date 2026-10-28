@@ -1,0 +1,37 @@
+name: Jules connection check
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/jules-connection.yml']
+  workflow_dispatch:
+permissions: {}
+jobs:
+  check:
+    if: github.event.repository.private == false && vars.AUTOMATION_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Verify Jules source without creating a session
+        env:
+          JULES_API_KEY: ${{ secrets.JULES_API_KEY }}
+        run: |
+          node --input-type=module <<'JS'
+          if (!process.env.JULES_API_KEY) throw Error('JULES_API_KEY is not configured');
+          let next = '';
+          let found = false;
+          for (let page = 0; page < 20; page++) {
+            const url = 'https://jules.googleapis.com/v1alpha/sources?pageSize=100' + (next ? '&pageToken=' + encodeURIComponent(next) : '');
+            const response = await fetch(url, {
+              headers: { 'X-Goog-Api-Key': process.env.JULES_API_KEY },
+              redirect: 'error',
+              signal: AbortSignal.timeout(20000)
+            });
+            if (!response.ok) throw Error('Jules authentication/source request failed: HTTP ' + response.status);
+            const data = await response.json();
+            found = data.sources?.some(s => s.githubRepo?.owner === 'shoichi-shikita' && s.githubRepo?.repo === 'ice-forest');
+            if (found || !data.nextPageToken) break;
+            next = data.nextPageToken;
+          }
+          if (!found) throw Error('Jules is reachable, but ice-forest is not connected to this API key account');
+          console.log('PASS: Jules authenticated; shoichi-shikita/ice-forest found. No session created.');
+          JS
