@@ -1,6 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { decide, run } from './feedback.mjs';
+import { readFileSync } from 'node:fs';
+
+test('privileged workflow excludes PR-ref triggers and pins checkout to default branch', () => {
+  const workflow = readFileSync(new URL('../.github/workflows/ai-feedback.yml', import.meta.url), 'utf8');
+  assert.doesNotMatch(workflow, /^\s{2}pull_request(?:_review|_target)?:/m);
+  assert.match(workflow, /ref: \$\{\{ github.event.repository.default_branch \}\}/);
+});
 
 const pr = { number: 3, state: 'open', draft: false, html_url: 'https://github.com/shoichi-shikita/ice-forest/pull/3', labels: [{ name: 'ai-auto-fix' }], head: { sha: 'abc', repo: { full_name: 'shoichi-shikita/ice-forest' } }, base: { repo: { full_name: 'shoichi-shikita/ice-forest' } } };
 const summary = (sha = 'abc', findings = true, status = 'completed') => ({ user: { login: 'chatgpt-codex-connector[bot]' }, body: `<!-- codex-review-state:v1 ${JSON.stringify({code_review:{commit_sha:sha,has_any_findings:findings,status}})} -->` });
