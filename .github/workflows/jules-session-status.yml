@@ -1,0 +1,31 @@
+name: Jules session status
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/jules-session-status.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+  issues: write
+jobs:
+  status:
+    if: github.event.repository.private == false && vars.AUTOMATION_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Read existing integration session
+        env:
+          JULES_API_KEY: ${{ secrets.JULES_API_KEY }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          node --input-type=module <<'JS'
+          const res = await fetch('https://jules.googleapis.com/v1alpha/sessions/4129397307216587511', {headers:{'X-Goog-Api-Key':process.env.JULES_API_KEY},redirect:'error',signal:AbortSignal.timeout(20000)});
+          if (!res.ok) throw Error('Jules HTTP '+res.status);
+          const session = await res.json();
+          const state = /^[A-Z_]+$/.test(session.state ?? '') ? session.state : 'UNKNOWN';
+          const prs = (session.outputs ?? []).map(o=>o.pullRequest?.url).filter(u=>/^https:\/\/github\.com\/shoichi-shikita\/ice-forest\/pull\/\d+$/.test(u ?? ''));
+          const body = 'Existing integration session: sessions/4129397307216587511\nState: '+state+'\n'+prs.join('\n')+'\nRead-only status check. No task created or approved.';
+          console.log(body);
+          const posted = await fetch('https://api.github.com/repos/shoichi-shikita/ice-forest/issues/2/comments', {method:'POST',redirect:'error',headers:{Authorization:'Bearer '+process.env.GH_TOKEN,'Content-Type':'application/json'},body:JSON.stringify({body}),signal:AbortSignal.timeout(20000)});
+          if (!posted.ok) throw Error('GitHub status comment HTTP '+posted.status);
+          JS
